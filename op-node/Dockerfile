@@ -1,11 +1,11 @@
-FROM golang:1.21 AS build-op-node
+FROM golang:1.22 AS build-op-node
 
 WORKDIR /app
 
 ENV REPO=https://github.com/ethereum-optimism/optimism.git
-ENV VERSION=v1.9.3
+ENV VERSION=v1.9.5
 # for verification:
-ENV COMMIT=e81c50de0a51954c64444b849be4768c8116cffb
+ENV COMMIT=5662448279e4fb16e073e00baeb6e458b12a59b2
 
 RUN git clone $REPO --branch op-node/$VERSION --single-branch . && \
     git switch -c branch-$VERSION && \
@@ -13,7 +13,7 @@ RUN git clone $REPO --branch op-node/$VERSION --single-branch . && \
 
 RUN cd op-node && make VERSION=$VERSION op-node
 
-FROM golang:1.21
+FROM golang:1.22
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

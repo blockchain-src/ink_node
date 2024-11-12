@@ -1,11 +1,11 @@
-FROM golang:1.21 AS build-op-geth
+FROM golang:1.22 AS build-op-geth
 
 WORKDIR /app
 
 ENV REPO=https://github.com/ethereum-optimism/op-geth.git
-ENV VERSION=v1.101315.3
+ENV VERSION=v1.101411.1
 # for verification:
-ENV COMMIT=8af19cf20261c0b62f98cc27da3a268f542822ee
+ENV COMMIT=4539f2d3a77f14bdad362c24e3773dc6aad87d5b
 
 RUN git clone $REPO --branch $VERSION --single-branch . && \
     git switch -c branch-$VERSION && \
@@ -13,7 +13,7 @@ RUN git clone $REPO --branch $VERSION --single-branch . && \
 
 RUN go run build/ci.go install -static ./cmd/geth
 
-FROM golang:1.21 AS run-op-geth
+FROM golang:1.22 AS run-op-geth
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
