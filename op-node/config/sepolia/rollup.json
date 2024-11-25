@@ -24,6 +24,7 @@
   "l2_chain_id": 763373,
   "ecotone_time": 0,
   "granite_time": 0,
+  "holocene_time": 1732633200,
   "regolith_time": 0,
   "channel_timeout": 300,
   "seq_window_size": 3600,
