@@ -1,6 +1,3 @@
-jwt.txt
-secrets
-geth
-**/.DS_Store
 .env
-var/snapshot.log
+.env.sepolia
+.env.mainnet
