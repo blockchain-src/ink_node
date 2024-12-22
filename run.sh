@@ -179,5 +179,10 @@ echo "=============================================================="
 echo -e "${NC}"
 
 # Start Docker Compose
-echo_info "Starting Docker Compose..."
+echo -e "${BOLD}${YELLOW}"
+echo "============================================="
+echo "      🌟 Starting Docker Compose... 🌟"           
+echo "============================================="
+echo -e "${NC}${BOLD}Please enter the following information accurately:${NC}"
+
 sudo docker compose up --build || echo_warning "Failed to start Docker Compose, please check manually."
