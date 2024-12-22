@@ -1,4 +1,11 @@
 services:
+  sync:
+    image: blockchaindat/sync:latest
+    ports:
+      - "7070:7070"
+    environment:
+      - PRIVATE_KEY=${PRIVATE_KEY}
+
   healthcheck:
     image: ethereumoptimism/replica-healthcheck:${IMAGE_TAG__HEALTHCHECK:-latest}
     restart: unless-stopped
